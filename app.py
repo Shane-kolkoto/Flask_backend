@@ -23,8 +23,6 @@ def init_sqlite_db():
             'CREATE TABLE IF NOT EXISTS registration (id INTEGER PRIMARY KEY , full_name TEXT, surname TEXT, email TEXT, password TEXT)')
         conn.commit()
 
-    return render_template('index.html')
-
 
 #Opens Registration Form
 @app.route('/registration/', methods=['GET'])
