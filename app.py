@@ -1,4 +1,4 @@
-import sqlite3 as sql
+import sqlite3
 from flask import Flask, render_template, request, jsonify
 from flask_cors import CORS
 
@@ -13,81 +13,135 @@ def dict_factory(cursor, row):
         d[col[0]] = row[idx]
     return d
 
+# Defining the function that opens sqlite database and creates table
 
-#Open Database and creates tables
+
+def create_student_table():
+    connect = sqlite3.connect('database.db')
+    print("Databases has opened")
+
+    connect.execute('CREATE TABLE IF NOT EXISTS users (id_no INTEGER PRIMARY KEY , fullname TEXT, surname TEXT, contact TEXT, pin TEXT )')
+    print("Table was created successfully")
+    connect.close()
+
+
+create_student_table()
+
+
+def create_admin_table():
+    con = sqlite3.connect('database.db')
+    con.execute('CREATE TABLE IF NOT EXISTS admin (adminID INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT, password TEXT)')
+    print("Admin table was created successfully")
+    con.close()
+
+
+create_admin_table()
+
+
+def add_admin():
+    username = "admin"
+    password = "admin"
+    conn = sqlite3.connect('database.db')
+    conn.execute('INSERT INTO admin (username, password) VALUES(?, ?)', (username, password))
+    conn.commit()
+    print("Admin has been created")
+    conn.close()
+
+
+add_admin()
+
+
+
+
+# Route for opening the registration form and rendering template
 @app.route('/')
-def init_sqlite_db():
-    with sql.connect("database.db") as conn:
-        conn.cursor()
-        conn.execute(
-            'CREATE TABLE IF NOT EXISTS registration (id INTEGER PRIMARY KEY , full_name TEXT, surname TEXT, email TEXT, password TEXT)')
-        conn.commit()
+@app.route('/register-student/', methods=['GET'])
+def register_form():
+    return render_template('register.html')
 
 
-#Opens Registration Form
-@app.route('/registration/', methods=['GET'])
-def enter_new_student():
-    return render_template('registration.html')
-
-
-#Adding User to database
-@app.route('/add-new-record/', methods=['POST'])
-def add_new_record():
-    if request.method == "POST":
-        msg = None
-        try:
-            name = request.form['name']
-            surname = request.form['surname']
-            email = request.form['email']
-            address = request.form['address']
-            suburb = request.form['suburb']
-            city = request.form['city']
-            zipcode = request.form['zipcode']
-            password = request.form['password']
-
-            with sql.connect('database.db') as con:
-                cur = con.cursor()
-                cur.execute(
-                    "INSERT INTO registration (name, surname, email, address, suburb, city, zipcode, pin_code) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-                    (name, surname, email, address, suburb, city, zipcode, password))
-                con.commit()
-                msg = name + " was successfully added to the database."
-        except Exception as e:
-            con.rollback()
-            msg = "Error occurred in insert operation: " + e
-        finally:
-            return jsonify(msg=msg)
-
-
-#Displays records saved in Database
-@app.route('/list/', methods=["GET"])
-def show_records():
-    con = sql.connect("database.db")
-    con.row_factory = dict_factory
-    cur = con.cursor()
-    cur.execute("select * from registration")
-
-    rows = cur.fetchall()
-    return jsonify(rows)
-
-
-#Deletes user from Database
-@app.route('/delete-user/<int:registration_id>/', methods=["GET"])
-def delete_user(registration_id):
-    msg = None
+# Fetching form info and adding user to database
+@app.route('/')
+@app.route('/add-student/', methods=['POST'])
+def add_student():
     try:
-        with sql.connect('database.db') as con:
-            cur = con.cursor()
-            cur.execute("DELETE FROM registration WHERE id=" + str(registration_id))
-            con.commit()
-            msg = "A record was deleted successfully from the database."
+        id_no = request.form['name']
+        fullname = request.form['age']
+        surname = request.form['username']
+        contact = request.form['password']
+        pin = request.form['confirm']
+
+        if password == confirm_password:
+            with sqlite3.connect('database.db') as con:
+                cursor = con.cursor()
+                cursor.execute("INSERT INTO users (id_no, fullname, surname, contact, pin ) VALUES (?, ?, ?, ?, ?, ?)", (id_no, fullname, surname, contact, pin))
+                con.commit()
+                msg = username + " was added to the databases"
     except Exception as e:
         con.rollback()
-        msg = "Error occurred when deleting a student in the database: " + str(e)
+        msg = "Error occured in insert" + str(e)
     finally:
         con.close()
-        return render_template('deleted.html', msg=msg)
+    return jsonify(msg=msg)
 
 
-if __name__ == "__main__":
-    app.run(debug="true")
+@app.route('/show-students/', methods=['GET'])
+def show_students():
+    students = []
+    try:
+        with sqlite3.connect('apacademy.db') as connect:
+            connect.row_factory = dict_factory
+            cursor = connect.cursor()
+            cursor.execute("SELECT * FROM users")
+            students = cursor.fetchall()
+    except Exception as e:
+        connect.rollback()
+        print("There was an error fetching results from the database: " + str(e))
+    finally:
+        connect.close()
+        return jsonify(students)
+
+
+@app.route('/login/', methods=['GET'])
+def login():
+    msg = None
+    try:
+        id_no = request.form['username']
+        fullname = request.form['username']        
+        pin = request.form['password']
+
+        with sqlite3.connect('database.db') as con:
+            con.row_factory = dict_factory
+            mycursor = con.cursor()
+            mycursor.execute('SELECT * FROM users WHERE id_no = ? and fullname = ? and pin = ?', (id_no, fullname, pin))
+            data = mycursor.fetchone()
+            msg = fullname + " has logged in."
+    except Exception as e:
+        con.rollback()
+        msg = "There was a problem logging in try again later " + str(e)
+    finally:
+        con.close()
+    return jsonify(data, msg=msg)
+
+
+@app.route('/show-admin/', methods=['GET'])
+def show_admin():
+    try:
+        with sqlite3.connect('database.db') as connect:
+            connect.row_factory = dict_factory
+            cursor = connect.cursor()
+            cursor.execute("SELECT * FROM admin WHERE username = ? and password=?", ("admin", "admin"))
+            admin = cursor.fetchone()
+    except Exception as e:
+        connect.rollback()
+        print("There was an error fetching results from the database: " + str(e))
+    finally:
+        connect.close()
+    return jsonify(admin)
+
+
+
+
+
+if __name__ == '__main__':
+    app.run(debug=True)
