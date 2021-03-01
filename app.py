@@ -107,9 +107,9 @@ def show_students():
 def login():
     msg = None
     try:
-        id_no = request.form['username']
-        fullname = request.form['username']        
-        pin = request.form['password']
+        id_no = request.form['id']
+        fullname = request.form['fullname']        
+        pin = request.form['pin']
 
         with sqlite3.connect('database.db') as con:
             con.row_factory = dict_factory
