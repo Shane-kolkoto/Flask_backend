@@ -65,18 +65,19 @@ def register_form():
 @app.route('/add-student/', methods=['POST'])
 def add_student():
     try:
-        id_no = request.form['name']
-        fullname = request.form['age']
-        surname = request.form['username']
-        contact = request.form['password']
-        pin = request.form['confirm']
+        id_no = request.form['id']
+        fullname = request.form['fullname']
+        surname = request.form['surname']
+        contact = request.form['contact']
+        pin = request.form['pin']
+        confirm = request.form['confirm']
 
-        if password == confirm_password:
+        if pin == confirm:
             with sqlite3.connect('database.db') as con:
                 cursor = con.cursor()
-                cursor.execute("INSERT INTO users (id_no, fullname, surname, contact, pin ) VALUES (?, ?, ?, ?, ?, ?)", (id_no, fullname, surname, contact, pin))
+                cursor.execute("INSERT INTO users (id_no, fullname, surname, contact, pin ) VALUES (?, ?, ?, ?, ?)", (id_no, fullname, surname, contact, pin))
                 con.commit()
-                msg = username + " was added to the databases"
+                msg = fullname + " was added to the databases"
     except Exception as e:
         con.rollback()
         msg = "Error occured in insert" + str(e)
@@ -89,7 +90,7 @@ def add_student():
 def show_students():
     students = []
     try:
-        with sqlite3.connect('apacademy.db') as connect:
+        with sqlite3.connect('database.db') as connect:
             connect.row_factory = dict_factory
             cursor = connect.cursor()
             cursor.execute("SELECT * FROM users")
@@ -124,13 +125,14 @@ def login():
     return jsonify(data, msg=msg)
 
 
+
 @app.route('/show-admin/', methods=['GET'])
 def show_admin():
     try:
         with sqlite3.connect('database.db') as connect:
             connect.row_factory = dict_factory
             cursor = connect.cursor()
-            cursor.execute("SELECT * FROM admin WHERE username = ? and password=?", ("admin", "admin"))
+            cursor.execute("SELECT * FROM admin WHERE username = ? and pin=?", ("admin", "admin"))
             admin = cursor.fetchone()
     except Exception as e:
         connect.rollback()
